@@ -2,34 +2,99 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My AI Voice Bot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Bot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #bot-container {
+      width: 420px;
+      height: 600px;
+      border-radius: 15px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+      overflow: hidden;
+      position: relative;
+    }
+    #mic-btn {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0078ff;
+      border: none;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 28px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    #mic-btn.active {
+      background: #ff3b3b;
+    }
+  </style>
 </head>
 <body>
-  <h2>🤖 My Botpress Voice Assistant</h2>
-  <p>Click the mic 🎤 inside the chat and talk to your bot!</p>
+  <div id="bot-container"></div>
+  <button id="mic-btn">🎤</button>
 
-  <!-- Botpress webchat -->
+  <!-- Botpress Webchat -->
   <script src="https://cdn.botpress.cloud/webchat/v3.2/inject.js"></script>
   <script>
     window.botpressWebChat.init({
       configUrl: "https://files.bpcontent.cloud/2025/08/12/15/20250812155352-8W8DCNAV.json",
-      // You can force the widget to show immediately
-      showCloseButton: true,
-      showConversationsButton: true,
+      container: document.getElementById("bot-container"),
     });
 
-    // Voice output (text-to-speech)
-    window.botpressWebChat.onEvent(function (event) {
-      if (event.type === "MESSAGE.RECEIVED") {
-        const msg = event.payload.text;
-        if (msg) {
-          const utterance = new SpeechSynthesisUtterance(msg);
-          utterance.lang = "en-US"; // you can change voice language if needed
+    // Speech Recognition Setup
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+
+    const micBtn = document.getElementById("mic-btn");
+
+    micBtn.addEventListener("click", () => {
+      if (micBtn.classList.contains("active")) {
+        recognition.stop();
+        micBtn.classList.remove("active");
+      } else {
+        recognition.start();
+        micBtn.classList.add("active");
+      }
+    });
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      window.botpressWebChat.sendPayload({ type: "text", text: transcript });
+    };
+
+    recognition.onend = () => {
+      micBtn.classList.remove("active");
+    };
+
+    // Text-to-Speech for bot replies
+    window.addEventListener("message", (event) => {
+      if (event.data && event.data.type === "webchat.message") {
+        const message = event.data.message;
+        if (message && message.payload && message.payload.text) {
+          const utterance = new SpeechSynthesisUtterance(message.payload.text);
+          utterance.lang = "en-US";
           speechSynthesis.speak(utterance);
         }
       }
-    }, ["MESSAGE.RECEIVED"]);
+    });
   </script>
 </body>
 </html>
