@@ -1,133 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Voice Bot</title>
+  <meta charset="UTF-8">
+  <title>Voice Enabled Botpress</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #74ebd5 0%, #9face6 100%);
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .chat-container {
-      background: #fff;
-      border-radius: 20px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-      width: 400px;
-      height: 600px;
+      background: #f4f6fc;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
-    }
-    .header {
-      background: #4e54c8;
-      color: #fff;
-      padding: 15px;
-      font-size: 20px;
-      text-align: center;
-      font-weight: bold;
-    }
-    iframe {
-      flex: 1;
-      border: none;
-      width: 100%;
-    }
-    .controls {
-      display: flex;
-      justify-content: space-around;
       align-items: center;
-      padding: 10px;
-      background: #f0f0f0;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
     }
-    button {
+    #chat-box {
+      width: 350px;
+      height: 400px;
+      border-radius: 15px;
+      border: 1px solid #ddd;
+      background: #fff;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      padding: 15px;
+      overflow-y: auto;
+    }
+    .msg {
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 12px;
+      max-width: 80%;
+    }
+    .user { background: #0078ff; color: white; margin-left: auto; }
+    .bot { background: #eaeaea; color: black; margin-right: auto; }
+    #controls {
+      margin-top: 15px;
+    }
+    #mic-btn {
+      background: #0078ff;
+      color: white;
       border: none;
-      border-radius: 50%;
-      padding: 12px;
+      padding: 12px 20px;
+      border-radius: 50px;
       font-size: 16px;
       cursor: pointer;
-      transition: 0.3s;
     }
-    button:hover {
-      transform: scale(1.1);
-    }
-    .mic {
-      background: #4CAF50;
-      color: white;
-    }
-    .speak {
-      background: #2196F3;
-      color: white;
+    #mic-btn:active {
+      background: #005fcc;
     }
   </style>
 </head>
 <body>
-  <div class="chat-container">
-    <div class="header">🤖 AI Voice Bot</div>
 
-    <!-- Botpress bot -->
-    <iframe id="botFrame" 
-      src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/12/15/20250812155352-8W8DCNAV.json">
-    </iframe>
+  <h2>🤖 Voice Botpress Chat</h2>
+  <div id="chat-box"></div>
 
-    <!-- Controls -->
-    <div class="controls">
-      <button class="mic" id="micBtn">🎤</button>
-      <button class="speak" id="speakBtn">🔊</button>
-    </div>
+  <div id="controls">
+    <button id="mic-btn">🎤 Speak</button>
   </div>
 
   <script>
-    const micBtn = document.getElementById("micBtn");
-    const speakBtn = document.getElementById("speakBtn");
-    const botFrame = document.getElementById("botFrame");
+    const chatBox = document.getElementById("chat-box");
+    const micBtn = document.getElementById("mic-btn");
 
-    // Auto Greeting when page loads
-    window.onload = () => {
-      setTimeout(() => {
-        botFrame.contentWindow.postMessage(
-          { type: "event", value: { type: "text", text: "Hello! 👋 I’m your AI Voice Bot. How can I help you today?" } },
-          "*"
-        );
-      }, 2000);
-    };
+    const bpUrl = "https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/12/15/20250812155352-8W8DCNAV.json";
 
-    // Speech-to-Text (Mic)
+    // ✅ Function to add message to UI
+    function addMessage(text, sender) {
+      const msg = document.createElement("div");
+      msg.className = `msg ${sender}`;
+      msg.innerText = text;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // ✅ Speak Botpress reply
+    function speak(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      speechSynthesis.speak(utterance);
+    }
+
+    // ✅ Send message to Botpress API
+    async function sendToBotpress(message) {
+      addMessage(message, "user");
+      try {
+        const res = await fetch("https://api.botpress.cloud/v1/chat/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer YOUR_API_KEY" // replace with Botpress key if required
+          },
+          body: JSON.stringify({
+            configUrl: "https://files.bpcontent.cloud/2025/08/12/15/20250812155352-8W8DCNAV.json",
+            message: message
+          })
+        });
+        const data = await res.json();
+        const reply = data.responses?.[0]?.text || "Sorry, no reply.";
+        addMessage(reply, "bot");
+        speak(reply);
+      } catch (err) {
+        addMessage("⚠️ Error contacting Botpress", "bot");
+      }
+    }
+
+    // ✅ Voice Recognition
     micBtn.onclick = () => {
       const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
       recognition.lang = "en-US";
       recognition.start();
+
       recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
-        botFrame.contentWindow.postMessage(
-          { type: "event", value: { type: "text", text: transcript } },
-          "*"
-        );
+        sendToBotpress(transcript);
       };
     };
 
-    // Text-to-Speech (Voice Output)
-    speakBtn.onclick = () => {
-      const msg = new SpeechSynthesisUtterance("Hello, I am your AI bot. Please ask me something.");
-      msg.lang = "en-US";
-      window.speechSynthesis.speak(msg);
+    // ✅ Auto send "hi" on load
+    window.onload = () => {
+      sendToBotpress("hi");
     };
-
-    // Auto-speak bot replies (optional)
-    window.addEventListener("message", (event) => {
-      if (event.data && event.data.type === "message") {
-        const text = event.data.message?.text;
-        if (text) {
-          const msg = new SpeechSynthesisUtterance(text);
-          msg.lang = "en-US";
-          window.speechSynthesis.speak(msg);
-        }
-      }
-    });
   </script>
 </body>
 </html>
