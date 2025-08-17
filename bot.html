@@ -13,6 +13,7 @@
       align-items: center;
       height: 100vh;
       margin: 0;
+      flex-direction: column;
     }
     .mic-btn {
       background: #4CAF50;
@@ -31,25 +32,24 @@
   </style>
 </head>
 <body>
-  <div>
-    <h1>🎤 Voice Chat with Botpress</h1>
-    <button class="mic-btn" onclick="startMic()">🎙️</button>
-  </div>
+  <h1>🎤 Voice Chat with Botpress</h1>
+  <button class="mic-btn" onclick="startMic()">🎙️</button>
 
   <script>
     // Initialize Botpress Webchat
     window.botpressWebChat.init({
       composerPlaceholder: "Say something...",
-      botId: "YOUR_BOT_ID", // Replace with your Bot ID
-      clientId: "YOUR_CLIENT_ID", // Replace with your Client ID
       configUrl: "https://files.bpcontent.cloud/2025/08/12/15/20250812155352-8W8DCNAV.json",
       showPoweredBy: false,
       enableConversationDeletion: false
     });
 
-    // Open chat automatically
+    // Mount the chat (this shows the widget!)
+    window.botpressWebChat.mount();
+
+    // Auto-send "hi" when loaded
     window.botpressWebChat.onEvent(function () {
-      window.botpressWebChat.sendPayload({ type: "text", text: "hi" }); // auto greet
+      window.botpressWebChat.sendPayload({ type: "text", text: "hi" });
     }, ["LIFECYCLE.LOADED"]);
 
     // Mic input → Speech-to-text → Send to Botpress
