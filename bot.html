@@ -151,7 +151,7 @@
             </button>
         </div>
         
-        <div id="status" class="status">Ready to listen</div>
+        <div id="status" class="status">Loading chatbot...</div>
     </div>
     
     <div class="footer">
@@ -159,91 +159,159 @@
     </div>
 
     <script>
-        // Wait for the Botpress webchat to load
+        // Global variables
+        let recognition;
+        let synth = window.speechSynthesis;
+        
+        // Wait for the page to load
         window.addEventListener('load', function() {
-            // Auto-open the chat
             const iframe = document.getElementById('webchat');
+            const statusEl = document.getElementById('status');
+            const startBtn = document.getElementById('startListening');
+            const stopBtn = document.getElementById('stopListening');
+            
+            // Initialize speech synthesis
+            if (!synth) {
+                statusEl.textContent = 'Text-to-speech not supported in this browser';
+            }
+            
+            // Initialize speech recognition
+            initializeSpeechRecognition();
+            
+            // Set up iframe message handling
             iframe.onload = function() {
-                // This will open the chat automatically
-                iframe.contentWindow.postMessage({ type: 'show' }, '*');
+                // Auto-open the chat
+                setTimeout(() => {
+                    iframe.contentWindow.postMessage({ type: 'show' }, '*');
+                    
+                    // Auto-send "hi" after a short delay to ensure chat is ready
+                    setTimeout(() => {
+                        iframe.contentWindow.postMessage({
+                            type: 'send',
+                            text: 'hi'
+                        }, '*');
+                        statusEl.textContent = 'Sent greeting to chatbot';
+                    }, 1000);
+                }, 500);
                 
                 // Listen for messages from the chatbot
                 window.addEventListener('message', function(event) {
                     if (event.data.type === 'MESSAGE_RECEIVED') {
                         // When a message is received from the bot, speak it out
-                        speak(event.data.text);
+                        const botResponse = event.data.text;
+                        speak(botResponse);
+                        statusEl.textContent = 'Bot responded: ' + botResponse.substring(0, 50) + (botResponse.length > 50 ? '...' : '');
                     }
                 });
             };
             
-            // Speech recognition setup
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                document.getElementById('status').textContent = 'Speech recognition not supported in this browser';
-                document.getElementById('startListening').disabled = true;
-                return;
+            // Button event listeners
+            startBtn.addEventListener('click', startListening);
+            stopBtn.addEventListener('click', stopListening);
+            
+            function initializeSpeechRecognition() {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                
+                if (!SpeechRecognition) {
+                    statusEl.textContent = 'Speech recognition not supported in this browser';
+                    startBtn.disabled = true;
+                    return;
+                }
+                
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+                
+                recognition.onstart = function() {
+                    statusEl.textContent = 'Listening... Speak now';
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                };
+                
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    statusEl.textContent = 'You said: ' + transcript;
+                    
+                    // Send the transcribed text to the chatbot
+                    iframe.contentWindow.postMessage({
+                        type: 'send',
+                        text: transcript
+                    }, '*');
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error('Speech recognition error', event.error);
+                    statusEl.textContent = 'Error: ' + event.error;
+                    stopListening();
+                };
+                
+                recognition.onend = function() {
+                    if (!stopBtn.disabled) {
+                        stopListening();
+                    }
+                };
             }
             
-            const recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.lang = 'en-US';
-            
-            const startBtn = document.getElementById('startListening');
-            const stopBtn = document.getElementById('stopListening');
-            
-            startBtn.addEventListener('click', function() {
-                recognition.start();
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
-                document.getElementById('status').textContent = 'Listening...';
-            });
-            
-            stopBtn.addEventListener('click', function() {
-                recognition.stop();
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-                document.getElementById('status').textContent = 'Ready to listen';
-            });
-            
-            recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
-                document.getElementById('status').textContent = 'You said: ' + transcript;
-                
-                // Send the transcribed text to the chatbot
-                iframe.contentWindow.postMessage({
-                    type: 'send',
-                    text: transcript
-                }, '*');
-            };
-            
-            recognition.onerror = function(event) {
-                console.error('Speech recognition error', event.error);
-                document.getElementById('status').textContent = 'Error: ' + event.error;
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-            };
-            
-            recognition.onend = function() {
-                if (!stopBtn.disabled) {
-                    startBtn.disabled = false;
-                    stopBtn.disabled = true;
-                    document.getElementById('status').textContent = 'Ready to listen';
+            function startListening() {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    statusEl.textContent = 'Error starting speech recognition: ' + e.message;
                 }
-            };
-        });
-        
-        // Text-to-speech function
-        function speak(text) {
-            if ('speechSynthesis' in window) {
+            }
+            
+            function stopListening() {
+                try {
+                    recognition.stop();
+                } catch (e) {
+                    console.log('Error stopping recognition:', e);
+                }
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                statusEl.textContent = 'Ready to listen - click microphone button';
+            }
+            
+            function speak(text) {
+                if (!synth) return;
+                
+                // Cancel any ongoing speech
+                synth.cancel();
+                
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.rate = 1.0;
                 utterance.pitch = 1.0;
-                window.speechSynthesis.speak(utterance);
-            } else {
-                console.log('Text-to-speech not supported in this browser');
+                utterance.volume = 1.0;
+                
+                // Select a voice if available
+                const voices = synth.getVoices();
+                if (voices.length > 0) {
+                    // Prefer a female voice if available
+                    const femaleVoice = voices.find(v => v.name.includes('Female'));
+                    if (femaleVoice) {
+                        utterance.voice = femaleVoice;
+                    } else {
+                        utterance.voice = voices[0];
+                    }
+                }
+                
+                synth.speak(utterance);
             }
-        }
+            
+            // Load voices when they become available
+            if (synth) {
+                synth.onvoiceschanged = function() {
+                    // Voices loaded
+                };
+                
+                // Some browsers need this to load voices
+                if (synth.getVoices().length === 0) {
+                    synth.addEventListener('voiceschanged', function() {
+                        // Voices loaded
+                    });
+                }
+            }
+        });
     </script>
 </body>
-</html
+</html>
