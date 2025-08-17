@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My AI Voice Bot</title>
+</head>
+<body>
+  <h2>🤖 My Botpress Voice Assistant</h2>
+  <p>Click the mic 🎤 inside the chat and talk to your bot!</p>
+
+  <!-- Botpress webchat -->
+  <script src="https://cdn.botpress.cloud/webchat/v3.2/inject.js"></script>
+  <script>
+    window.botpressWebChat.init({
+      configUrl: "https://files.bpcontent.cloud/2025/08/12/15/20250812155352-8W8DCNAV.json",
+      // You can force the widget to show immediately
+      showCloseButton: true,
+      showConversationsButton: true,
+    });
+
+    // Voice output (text-to-speech)
+    window.botpressWebChat.onEvent(function (event) {
+      if (event.type === "MESSAGE.RECEIVED") {
+        const msg = event.payload.text;
+        if (msg) {
+          const utterance = new SpeechSynthesisUtterance(msg);
+          utterance.lang = "en-US"; // you can change voice language if needed
+          speechSynthesis.speak(utterance);
+        }
+      }
+    }, ["MESSAGE.RECEIVED"]);
+  </script>
+</body>
+</html>
