@@ -2,120 +2,132 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Voice Bot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Voice Bot</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f6f9;
+      background: linear-gradient(135deg, #74ebd5 0%, #9face6 100%);
       margin: 0;
-      padding: 0;
       display: flex;
-      height: 100vh;
       justify-content: center;
       align-items: center;
+      height: 100vh;
     }
     .chat-container {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
       width: 400px;
       height: 600px;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
-    .chat-box {
-      flex: 1;
+    .header {
+      background: #4e54c8;
+      color: #fff;
       padding: 15px;
-      overflow-y: auto;
+      font-size: 20px;
+      text-align: center;
+      font-weight: bold;
     }
-    .message {
-      margin: 8px 0;
-      padding: 10px 14px;
-      border-radius: 12px;
-      max-width: 75%;
-      word-wrap: break-word;
-      line-height: 1.4;
+    iframe {
+      flex: 1;
+      border: none;
+      width: 100%;
     }
-    .user {
-      background: #1976d2;
-      color: white;
-      margin-left: auto;
-      border-bottom-right-radius: 0;
+    .controls {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px;
+      background: #f0f0f0;
     }
-    .bot {
-      background: #e4e6eb;
-      color: black;
-      margin-right: auto;
-      border-bottom-left-radius: 0;
-    }
-    .mic-btn {
-      background: #1976d2;
-      color: white;
+    button {
       border: none;
       border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      margin: 12px auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      padding: 12px;
+      font-size: 16px;
       cursor: pointer;
-      font-size: 24px;
-      transition: background 0.3s;
+      transition: 0.3s;
     }
-    .mic-btn:active {
-      background: #0d47a1;
+    button:hover {
+      transform: scale(1.1);
+    }
+    .mic {
+      background: #4CAF50;
+      color: white;
+    }
+    .speak {
+      background: #2196F3;
+      color: white;
     }
   </style>
 </head>
 <body>
   <div class="chat-container">
-    <div class="chat-box" id="chat-box"></div>
-    <button id="micBtn" class="mic-btn">🎤</button>
+    <div class="header">🤖 AI Voice Bot</div>
+
+    <!-- Botpress bot -->
+    <iframe id="botFrame" 
+      src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/12/15/20250812155352-8W8DCNAV.json">
+    </iframe>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="mic" id="micBtn">🎤</button>
+      <button class="speak" id="speakBtn">🔊</button>
+    </div>
   </div>
 
   <script>
     const micBtn = document.getElementById("micBtn");
-    const chatBox = document.getElementById("chat-box");
+    const speakBtn = document.getElementById("speakBtn");
+    const botFrame = document.getElementById("botFrame");
 
-    // Add message to chat
-    function addMessage(text, sender) {
-      const msg = document.createElement("div");
-      msg.className = "message " + sender;
-      msg.textContent = text;
-      chatBox.appendChild(msg);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
+    // Auto Greeting when page loads
+    window.onload = () => {
+      setTimeout(() => {
+        botFrame.contentWindow.postMessage(
+          { type: "event", value: { type: "text", text: "Hello! 👋 I’m your AI Voice Bot. How can I help you today?" } },
+          "*"
+        );
+      }, 2000);
+    };
 
-    // Voice recognition
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-
+    // Speech-to-Text (Mic)
     micBtn.onclick = () => {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "en-US";
       recognition.start();
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        botFrame.contentWindow.postMessage(
+          { type: "event", value: { type: "text", text: transcript } },
+          "*"
+        );
+      };
     };
 
-    recognition.onresult = (event) => {
-      const userText = event.results[0][0].transcript;
-      addMessage(userText, "user");
-
-      // --- Fake bot response for demo ---
-      let botReply = "You said: " + userText;
-      addMessage(botReply, "bot");
-
-      // Speak bot reply
-      const utterance = new SpeechSynthesisUtterance(botReply);
-      utterance.lang = "en-US";
-      speechSynthesis.speak(utterance);
+    // Text-to-Speech (Voice Output)
+    speakBtn.onclick = () => {
+      const msg = new SpeechSynthesisUtterance("Hello, I am your AI bot. Please ask me something.");
+      msg.lang = "en-US";
+      window.speechSynthesis.speak(msg);
     };
 
-    recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-    };
+    // Auto-speak bot replies (optional)
+    window.addEventListener("message", (event) => {
+      if (event.data && event.data.type === "message") {
+        const text = event.data.message?.text;
+        if (text) {
+          const msg = new SpeechSynthesisUtterance(text);
+          msg.lang = "en-US";
+          window.speechSynthesis.speak(msg);
+        }
+      }
+    });
   </script>
 </body>
 </html>
