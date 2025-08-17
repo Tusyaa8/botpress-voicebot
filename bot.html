@@ -2,84 +2,73 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Voice Bot</title>
-  <script src="https://cdn.botpress.cloud/webchat/v3.2/inject.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f7f8fa;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      flex-direction: column;
-    }
-    .mic-btn {
-      background: #4CAF50;
-      border: none;
-      color: white;
-      padding: 12px 20px;
-      font-size: 16px;
-      border-radius: 50%;
-      cursor: pointer;
-      margin-top: 20px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-    }
-    .mic-btn:hover {
-      background: #45a049;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Botpress Voice Chat</title>
 </head>
 <body>
-  <h1>🎤 Voice Chat with Botpress</h1>
-  <button class="mic-btn" onclick="startMic()">🎙️</button>
+  <h2>🎤 Voice Chat with Botpress</h2>
+  <button id="micBtn">🎙️ Speak</button>
 
+  <!-- Botpress Webchat -->
+  <script src="https://cdn.botpress.cloud/webchat/v3.2/inject.js"></script>
   <script>
-    // Initialize Botpress Webchat
+    // Initialize Botpress webchat
     window.botpressWebChat.init({
-      composerPlaceholder: "Say something...",
       configUrl: "https://files.bpcontent.cloud/2025/08/12/15/20250812155352-8W8DCNAV.json",
+      composerPlaceholder: "Type a message...",
+      botName: "My Voice Bot",
       showPoweredBy: false,
-      enableConversationDeletion: false
     });
 
-    // Mount the chat (this shows the widget!)
-    window.botpressWebChat.mount();
+    // Send a greeting automatically on load
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        window.botpressWebChat.sendPayload({
+          type: "text",
+          text: "hi"
+        });
+      }, 1500);
+    });
 
-    // Auto-send "hi" when loaded
-    window.botpressWebChat.onEvent(function () {
-      window.botpressWebChat.sendPayload({ type: "text", text: "hi" });
-    }, ["LIFECYCLE.LOADED"]);
+    // 🎤 Voice input setup
+    const micBtn = document.getElementById("micBtn");
+    let recognition;
 
-    // Mic input → Speech-to-text → Send to Botpress
-    function startMic() {
-      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      recognition.lang = "en-US";
+    if ("webkitSpeechRecognition" in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
+      recognition.lang = "en-US";
 
-      recognition.start();
+      micBtn.addEventListener("click", () => {
+        recognition.start();
+      });
 
       recognition.onresult = function(event) {
-        const text = event.results[0][0].transcript;
-        console.log("Heard:", text);
-        window.botpressWebChat.sendPayload({ type: "text", text });
-      };
+        const transcript = event.results[0][0].transcript;
+        console.log("User said:", transcript);
 
-      recognition.onerror = function(event) {
-        alert("Mic error: " + event.error);
+        // Send recognized text to Botpress
+        window.botpressWebChat.sendPayload({
+          type: "text",
+          text: transcript
+        });
       };
+    } else {
+      micBtn.disabled = true;
+      micBtn.innerText = "🎤 Not supported";
     }
 
-    // Botpress reply → Speak it
-    window.botpressWebChat.onEvent(function(event) {
-      if (event.type === "MESSAGE.RECEIVED" && event.message && event.message.payload && event.message.payload.text) {
-        const msg = event.message.payload.text;
-        const utterance = new SpeechSynthesisUtterance(msg);
-        speechSynthesis.speak(utterance);
+    // 🔊 Speak out bot replies
+    window.addEventListener("message", (event) => {
+      if (event.data.type === "webchat:message") {
+        const message = event.data.message;
+        if (message.type === "text" && message.payload.text) {
+          const utterance = new SpeechSynthesisUtterance(message.payload.text);
+          speechSynthesis.speak(utterance);
+        }
       }
-    }, ["MESSAGE.RECEIVED"]);
+    });
   </script>
 </body>
 </html>
