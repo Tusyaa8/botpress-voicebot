@@ -2,116 +2,117 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Voice Bot - Tusyaa</title>
+  <title>Voice Bot</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f5f7fa;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      height: 100vh;
+      background: #f4f6f9;
       margin: 0;
-    }
-    header {
-      background: #4a90e2;
-      color: white;
-      padding: 15px;
-      text-align: center;
-      width: 100%;
-      font-size: 20px;
-    }
-    iframe {
-      flex: 1;
-      width: 100%;
-      border: none;
-    }
-    #controls {
+      padding: 0;
       display: flex;
       justify-content: center;
-      gap: 20px;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .chat-container {
+      width: 400px;
+      height: 600px;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-box {
+      flex: 1;
       padding: 15px;
-      background: #fff;
-      border-top: 1px solid #ddd;
+      overflow-y: auto;
     }
-    button {
-      padding: 12px 20px;
+
+    .message {
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 12px;
+      max-width: 75%;
+      word-wrap: break-word;
+    }
+
+    .user {
+      background: #0078ff;
+      color: white;
+      align-self: flex-end;
+    }
+
+    .bot {
+      background: #e5e5ea;
+      color: black;
+      align-self: flex-start;
+    }
+
+    .mic-btn {
+      background: #0078ff;
+      color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      margin: 15px auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 24px;
+      box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+      transition: 0.2s;
     }
-    #micBtn {
-      background: #4caf50;
-      color: white;
-    }
-    #speakBtn {
-      background: #ff9800;
-      color: white;
+
+    .mic-btn:hover {
+      background: #005fcc;
     }
   </style>
 </head>
 <body>
-  <header>🎤 AI Voice Bot</header>
-
-  <!-- Botpress chat -->
-  <iframe src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/12/15/20250812155352-8W8DCNAV.json"></iframe>
-
-  <!-- Controls -->
-  <div id="controls">
-    <button id="micBtn">🎙️ Speak</button>
-    <button id="speakBtn">🔊 Repeat Bot Reply</button>
+  <div class="chat-container">
+    <div class="chat-box" id="chatBox"></div>
+    <button class="mic-btn" id="micBtn">🎤</button>
   </div>
 
   <script>
-    const micBtn = document.getElementById('micBtn');
-    const speakBtn = document.getElementById('speakBtn');
-    let lastBotMessage = "";
+    const micBtn = document.getElementById("micBtn");
+    const chatBox = document.getElementById("chatBox");
 
-    // Speech Recognition (mic input)
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.lang = "en-US";
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
 
-      micBtn.addEventListener("click", () => {
-        recognition.start();
-        micBtn.innerText = "🎙️ Listening...";
-      });
-
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        micBtn.innerText = "🎙️ Speak";
-        // Send recognized text into Botpress iframe
-        const iframe = document.querySelector("iframe").contentWindow;
-        iframe.postMessage({ type: "event", channel: "web", direction: "incoming", payload: { type: "text", text: transcript } }, "*");
-      };
-
-      recognition.onend = () => {
-        micBtn.innerText = "🎙️ Speak";
-      };
-    } else {
-      micBtn.disabled = true;
-      micBtn.innerText = "Speech not supported";
+    function addMessage(text, sender) {
+      const msg = document.createElement("div");
+      msg.classList.add("message", sender);
+      msg.textContent = text;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // Listen for Botpress messages
-    window.addEventListener("message", (event) => {
-      if (event.data?.payload?.type === "text") {
-        lastBotMessage = event.data.payload.text;
-      }
-    });
+    function botReply(userText) {
+      let reply = "I heard: " + userText; // Placeholder bot logic
+      addMessage(reply, "bot");
 
-    // Text-to-Speech (bot reply voice)
-    speakBtn.addEventListener("click", () => {
-      if (lastBotMessage) {
-        const utterance = new SpeechSynthesisUtterance(lastBotMessage);
-        utterance.lang = "en-US";
-        speechSynthesis.speak(utterance);
-      } else {
-        alert("No bot reply yet!");
-      }
+      // Speak reply
+      const utterance = new SpeechSynthesisUtterance(reply);
+      speechSynthesis.speak(utterance);
+    }
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      addMessage(transcript, "user");
+      botReply(transcript);
+    };
+
+    micBtn.addEventListener("click", () => {
+      recognition.start();
     });
   </script>
 </body>
