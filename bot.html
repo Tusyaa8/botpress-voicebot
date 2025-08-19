@@ -3,715 +3,425 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice-Enabled Chatbot</title>
+    <title>Voice-Enabled Botpress Chat</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        * {
             margin: 0;
             padding: 0;
-            background-color: #f5f7fa;
-            color: #333;
-            display: flex;
-            flex-direction: column;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-        }
-        
-        .header {
-            background-color: #4a6baf;
-            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        
+
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .chat-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-        
-        .chat-header {
-            background-color: #4a6baf;
-            color: white;
-            padding: 15px;
-            font-weight: bold;
-        }
-        
-        #webchat {
-            flex: 1;
-            height: 500px;
-            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            text-align: center;
+            max-width: 500px;
             width: 100%;
+            margin-bottom: 30px;
         }
-        
+
+        h1 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
         .voice-controls {
             display: flex;
+            gap: 15px;
             justify-content: center;
-            gap: 15px;
-            padding: 15px;
-            background-color: #f0f2f5;
-            border-top: 1px solid #e1e4e8;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
         }
-        
-        .btn {
-            padding: 12px 24px;
+
+        .voice-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
             border: none;
-            border-radius: 6px;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 50px;
             cursor: pointer;
+            font-size: 16px;
             font-weight: bold;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .voice-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .voice-btn:active {
+            transform: translateY(0);
+        }
+
+        .voice-btn.recording {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            animation: pulse 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            from {
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            }
+            to {
+                box-shadow: 0 4px 25px rgba(231, 76, 60, 0.6);
+            }
+        }
+
+        .tts-btn {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
             font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
-        
-        .btn-primary {
-            background-color: #4a6baf;
-            color: white;
+
+        .tts-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
         }
-        
-        .btn-primary:hover:not(:disabled) {
-            background-color: #3a5a9f;
-        }
-        
-        .btn-danger {
-            background-color: #e74c3c;
-            color: white;
-        }
-        
-        .btn-danger:hover:not(:disabled) {
-            background-color: #c0392b;
-        }
-        
-        .btn-success {
-            background-color: #27ae60;
-            color: white;
-        }
-        
-        .btn-success:hover:not(:disabled) {
-            background-color: #219a52;
-        }
-        
-        .btn:disabled {
-            opacity: 0.6;
+
+        .tts-btn:disabled {
+            background: #95a5a6;
             cursor: not-allowed;
+            transform: none;
         }
-        
+
         .status {
-            text-align: center;
-            padding: 15px;
-            font-weight: 500;
-            background-color: #fff;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            border-left: 4px solid #4a6baf;
-        }
-        
-        .status.listening {
-            background-color: #e8f5e8;
-            border-left-color: #27ae60;
-            color: #2d5016;
-        }
-        
-        .status.error {
-            background-color: #ffe6e6;
-            border-left-color: #e74c3c;
-            color: #cc0000;
-        }
-        
-        .status.speaking {
-            background-color: #e6f3ff;
-            border-left-color: #3498db;
-            color: #1e3a5f;
-        }
-        
-        .footer {
-            text-align: center;
-            padding: 15px;
-            background-color: #4a6baf;
             color: white;
-            margin-top: auto;
-        }
-        
-        .voice-settings {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 6px;
-            margin-bottom: 15px;
-        }
-        
-        .setting-item {
+            margin: 10px 0;
+            font-size: 16px;
+            min-height: 24px;
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
         }
-        
-        .setting-item label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #555;
-        }
-        
-        .setting-item input, .setting-item select {
-            padding: 6px 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 13px;
+
+        .chatbot-container {
             width: 100%;
-            max-width: 120px;
+            max-width: 1000px;
+            height: 600px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            background: white;
         }
-        
-        .debug-info {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
+
+        .chatbot-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 20px;
+        }
+
+        .feature-list {
+            color: white;
+            text-align: left;
+            margin-top: 15px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .feature-list li {
+            margin: 5px 0;
+            list-style: none;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .feature-list li:before {
+            content: "🎤";
+            position: absolute;
+            left: 0;
+        }
+
+        .mic-icon {
+            display: inline-block;
+            margin-left: 8px;
+            font-size: 18px;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
             padding: 10px;
-            margin-top: 10px;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 100px;
-            overflow-y: auto;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid rgba(255, 107, 107, 0.3);
         }
-        
+
         @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .chatbot-container {
+                height: 500px;
+            }
+            
             .voice-controls {
                 flex-direction: column;
-                align-items: center;
-            }
-            
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .voice-settings {
-                grid-template-columns: 1fr;
+                gap: 10px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🎤 Voice-Enabled Chatbot</h1>
-    </div>
-    
     <div class="container">
-        <div id="status" class="status">🔄 Initializing chatbot...</div>
-        
-        <div class="chat-container">
-            <div class="chat-header">Virtual Assistant</div>
-            <iframe id="webchat" src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/12/15/20250812155352-8W8DCNAV.json" allow="microphone"></iframe>
-        </div>
-        
-        <div class="voice-settings">
-            <div class="setting-item">
-                <label>Voice</label>
-                <select id="voiceSelect">
-                    <option value="">Loading voices...</option>
-                </select>
-            </div>
-            <div class="setting-item">
-                <label>Speed: <span id="rateValue">1.0</span></label>
-                <input type="range" id="speechRate" min="0.5" max="2" step="0.1" value="1">
-            </div>
-            <div class="setting-item">
-                <label>Pitch: <span id="pitchValue">1.0</span></label>
-                <input type="range" id="speechPitch" min="0" max="2" step="0.1" value="1">
-            </div>
-            <div class="setting-item">
-                <label>Volume: <span id="volumeValue">1.0</span></label>
-                <input type="range" id="speechVolume" min="0" max="1" step="0.1" value="1">
-            </div>
-        </div>
+        <h1>🎤 Voice Chat Assistant</h1>
         
         <div class="voice-controls">
-            <button id="startListening" class="btn btn-primary">
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5z"/>
-                    <path d="M10 8a2 2 0 1 1-4 0V3a2 2 0 1 1 4 0v5zM8 0a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V3a3 3 0 0 0-3-3z"/>
-                </svg>
-                🎤 Start Listening
+            <button id="voiceBtn" class="voice-btn">
+                Start Recording <span class="mic-icon">🎤</span>
             </button>
-            <button id="stopListening" class="btn btn-danger" disabled>
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5z"/>
-                </svg>
-                ⏹️ Stop Listening
-            </button>
-            <button id="muteToggle" class="btn btn-success">
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M11.536 14.01A8.473 8.473 0 0 0 14.026 8a8.473 8.473 0 0 0-2.49-6.01l-.708.707A7.476 7.476 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303l.708.707z"/>
-                    <path d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.483 5.483 0 0 1 11.025 8a5.483 5.483 0 0 1-1.611 3.889l.707.707z"/>
-                </svg>
-                🔊 Voice On
-            </button>
-            <button id="testVoice" class="btn btn-primary">
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                    <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
-                </svg>
-                🧪 Test Voice
+            <button id="ttsToggle" class="tts-btn">
+                Auto-Read: ON 🔊
             </button>
         </div>
         
-        <div id="debugInfo" class="debug-info"></div>
+        <div id="status" class="status">Click "Start Recording" to begin voice input</div>
+        
+        <ul class="feature-list">
+            <li>Click to start voice recording</li>
+            <li>Speak your message clearly</li>
+            <li>Bot responses are read aloud automatically</li>
+            <li>Toggle auto-read on/off as needed</li>
+        </ul>
     </div>
-    
-    <div class="footer">
-        &copy; 2023 Voice-Enabled Chatbot. All rights reserved. | Press Ctrl+Space to toggle listening | Ctrl+M to mute
+
+    <div class="chatbot-container">
+        <iframe 
+            id="botpressIframe"
+            class="chatbot-iframe"
+            src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/12/15/20250812155352-8W8DCNAV.json"
+            title="Botpress Chatbot">
+        </iframe>
     </div>
 
     <script>
-        // Global variables
-        let recognition = null;
-        let synth = window.speechSynthesis;
-        let isVoiceEnabled = true;
-        let chatbotReady = false;
-        let greetingSent = false;
-        let isListening = false;
-        let isSpeaking = false;
-        
-        // Debug logging
-        function debugLog(message) {
-            const debugInfo = document.getElementById('debugInfo');
-            const timestamp = new Date().toLocaleTimeString();
-            debugInfo.innerHTML += `[${timestamp}] ${message}<br>`;
-            debugInfo.scrollTop = debugInfo.scrollHeight;
-            console.log(`[Voice Bot] ${message}`);
-        }
-        
-        // Wait for the page to load
-        window.addEventListener('load', function() {
-            debugLog('Page loaded, initializing...');
-            
-            const iframe = document.getElementById('webchat');
-            const statusEl = document.getElementById('status');
-            const startBtn = document.getElementById('startListening');
-            const stopBtn = document.getElementById('stopListening');
-            const muteBtn = document.getElementById('muteToggle');
-            const testBtn = document.getElementById('testVoice');
-            const voiceSelect = document.getElementById('voiceSelect');
-            const speechRate = document.getElementById('speechRate');
-            const speechPitch = document.getElementById('speechPitch');
-            const speechVolume = document.getElementById('speechVolume');
-            const rateValue = document.getElementById('rateValue');
-            const pitchValue = document.getElementById('pitchValue');
-            const volumeValue = document.getElementById('volumeValue');
-            
-            // Initialize speech synthesis
-            initializeSpeechSynthesis();
-            
-            // Initialize speech recognition
-            initializeSpeechRecognition();
-            
-            // Set up iframe handling
-            setupIframe();
-            
-            // Button event listeners
-            startBtn.addEventListener('click', startListening);
-            stopBtn.addEventListener('click', stopListening);
-            muteBtn.addEventListener('click', toggleMute);
-            testBtn.addEventListener('click', testVoice);
-            
-            // Voice settings event listeners
-            voiceSelect.addEventListener('change', updateVoiceSettings);
-            speechRate.addEventListener('input', function() {
-                rateValue.textContent = this.value;
-                updateVoiceSettings();
-            });
-            speechPitch.addEventListener('input', function() {
-                pitchValue.textContent = this.value;
-                updateVoiceSettings();
-            });
-            speechVolume.addEventListener('input', function() {
-                volumeValue.textContent = this.value;
-                updateVoiceSettings();
-            });
-            
-            function initializeSpeechSynthesis() {
-                if (!synth) {
-                    updateStatus('❌ Text-to-speech not supported in this browser', 'error');
-                    debugLog('Speech synthesis not supported');
+        class VoiceChatBot {
+            constructor() {
+                this.recognition = null;
+                this.synthesis = window.speechSynthesis;
+                this.isRecording = false;
+                this.autoTTS = true;
+                this.botpressIframe = document.getElementById('botpressIframe');
+                this.voiceBtn = document.getElementById('voiceBtn');
+                this.ttsToggle = document.getElementById('ttsToggle');
+                this.status = document.getElementById('status');
+                
+                this.init();
+            }
+
+            init() {
+                this.initSpeechRecognition();
+                this.setupEventListeners();
+                this.setupBotpressListener();
+            }
+
+            initSpeechRecognition() {
+                if ('webkitSpeechRecognition' in window) {
+                    this.recognition = new webkitSpeechRecognition();
+                } else if ('SpeechRecognition' in window) {
+                    this.recognition = new SpeechRecognition();
+                } else {
+                    this.showError('Speech recognition not supported in this browser');
                     return;
                 }
-                
-                debugLog('Initializing speech synthesis...');
-                loadVoices();
-                
-                // Handle voices loaded event
-                synth.onvoiceschanged = function() {
-                    debugLog('Voices changed event triggered');
-                    loadVoices();
+
+                this.recognition.continuous = false;
+                this.recognition.interimResults = false;
+                this.recognition.lang = 'en-US';
+
+                this.recognition.onstart = () => {
+                    this.isRecording = true;
+                    this.updateUI();
+                    this.updateStatus('Listening... Speak now!');
                 };
-                
-                // Force load voices for some browsers
-                setTimeout(loadVoices, 100);
-                setTimeout(loadVoices, 1000);
+
+                this.recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    this.updateStatus(`Heard: "${transcript}"`);
+                    this.sendToBotpress(transcript);
+                };
+
+                this.recognition.onerror = (event) => {
+                    this.showError(`Speech recognition error: ${event.error}`);
+                    this.stopRecording();
+                };
+
+                this.recognition.onend = () => {
+                    this.stopRecording();
+                };
             }
-            
-            function loadVoices() {
-                const voices = synth.getVoices();
-                debugLog(`Loading ${voices.length} voices...`);
-                
-                voiceSelect.innerHTML = '<option value="">Default Voice</option>';
-                
-                voices.forEach((voice, index) => {
-                    const option = document.createElement('option');
-                    option.value = index;
-                    option.textContent = `${voice.name} (${voice.lang})`;
-                    if (voice.default) {
-                        option.textContent += ' [Default]';
+
+            setupEventListeners() {
+                this.voiceBtn.addEventListener('click', () => {
+                    if (this.isRecording) {
+                        this.stopRecording();
+                    } else {
+                        this.startRecording();
                     }
-                    voiceSelect.appendChild(option);
                 });
-                
-                if (voices.length > 0) {
-                    debugLog(`Loaded ${voices.length} voices successfully`);
-                } else {
-                    debugLog('No voices loaded yet, will retry...');
-                }
+
+                this.ttsToggle.addEventListener('click', () => {
+                    this.autoTTS = !this.autoTTS;
+                    this.ttsToggle.textContent = this.autoTTS ? 'Auto-Read: ON 🔊' : 'Auto-Read: OFF 🔇';
+                    this.updateStatus(this.autoTTS ? 'Auto-read enabled' : 'Auto-read disabled');
+                });
             }
-            
-            function setupIframe() {
-                debugLog('Setting up iframe...');
-                
-                iframe.onload = function() {
-                    debugLog('Iframe loaded');
-                    updateStatus('🔄 Chatbot loaded, initializing...', 'normal');
-                    
-                    // Multiple attempts to send greeting
-                    let attempts = 0;
-                    const maxAttempts = 10;
-                    
-                    const sendGreetingInterval = setInterval(() => {
-                        attempts++;
-                        debugLog(`Attempt ${attempts} to send greeting...`);
-                        
-                        if (sendMessageToBot('hi')) {
-                            greetingSent = true;
-                            clearInterval(sendGreetingInterval);
-                            updateStatus('✅ Greeting sent! Ready to chat.', 'normal');
-                            debugLog('Greeting sent successfully');
-                        } else if (attempts >= maxAttempts) {
-                            clearInterval(sendGreetingInterval);
-                            updateStatus('⚠️ Ready to chat (greeting may not have sent)', 'normal');
-                            debugLog('Max attempts reached for greeting');
-                        }
-                    }, 1500);
-                };
-                
-                // Listen for messages from the chatbot
-                window.addEventListener('message', function(event) {
-                    try {
-                        debugLog(`Received message: ${JSON.stringify(event.data)}`);
-                        
-                        if (event.data && typeof event.data === 'object') {
-                            // Handle different types of messages from Botpress
-                            if (event.data.type === 'MESSAGE_RECEIVED' || 
-                                (event.data.payload && event.data.payload.text)) {
-                                
-                                const botResponse = event.data.text || 
-                                                  event.data.payload.text || 
-                                                  event.data.message;
-                                
-                                if (botResponse && typeof botResponse === 'string') {
-                                    handleBotResponse(botResponse);
+
+            setupBotpressListener() {
+                // Listen for messages from the Botpress iframe
+                window.addEventListener('message', (event) => {
+                    // Check if message is from Botpress
+                    if (event.origin === 'https://cdn.botpress.cloud') {
+                        try {
+                            const data = event.data;
+                            // Look for bot messages
+                            if (data && data.type === 'message' && data.payload && data.payload.text) {
+                                const botMessage = data.payload.text;
+                                if (this.autoTTS && botMessage) {
+                                    this.speakText(botMessage);
                                 }
                             }
+                        } catch (error) {
+                            console.log('Message parsing error:', error);
                         }
-                    } catch (error) {
-                        debugLog(`Error handling message: ${error.message}`);
                     }
-                }, false);
+                });
             }
-            
-            function sendMessageToBot(message) {
+
+            startRecording() {
+                if (!this.recognition) {
+                    this.showError('Speech recognition not available');
+                    return;
+                }
+
                 try {
-                    iframe.contentWindow.postMessage({
-                        type: 'send',
-                        text: message
-                    }, '*');
-                    
-                    // Also try alternative message formats
-                    iframe.contentWindow.postMessage({
-                        type: 'message',
+                    this.recognition.start();
+                } catch (error) {
+                    this.showError('Could not start speech recognition');
+                }
+            }
+
+            stopRecording() {
+                if (this.recognition && this.isRecording) {
+                    this.recognition.stop();
+                }
+                this.isRecording = false;
+                this.updateUI();
+                this.updateStatus('Click "Start Recording" to speak again');
+            }
+
+            sendToBotpress(message) {
+                try {
+                    // Send message to Botpress iframe
+                    this.botpressIframe.contentWindow.postMessage({
+                        type: 'send_message',
                         payload: { text: message }
-                    }, '*');
+                    }, 'https://cdn.botpress.cloud');
                     
-                    debugLog(`Sent message to bot: "${message}"`);
-                    return true;
+                    this.updateStatus(`Sent: "${message}"`);
                 } catch (error) {
-                    debugLog(`Error sending message: ${error.message}`);
-                    return false;
+                    this.showError('Failed to send message to chatbot');
                 }
             }
-            
-            function handleBotResponse(botResponse) {
-                debugLog(`Bot responded: "${botResponse}"`);
+
+            speakText(text) {
+                if (!text) return;
                 
-                if (isVoiceEnabled && botResponse && !isSpeaking) {
-                    speak(botResponse);
-                }
+                // Stop any ongoing speech
+                this.synthesis.cancel();
                 
-                const shortResponse = botResponse.length > 100 
-                    ? botResponse.substring(0, 100) + '...' 
-                    : botResponse;
-                updateStatus(`🤖 Bot: ${shortResponse}`, 'normal');
-            }
-            
-            function updateStatus(message, type = 'normal') {
-                statusEl.textContent = message;
-                statusEl.className = `status ${type}`;
-                debugLog(`Status: ${message} (${type})`);
-            }
-            
-            function initializeSpeechRecognition() {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                utterance.volume = 0.8;
                 
-                if (!SpeechRecognition) {
-                    updateStatus('❌ Speech recognition not supported', 'error');
-                    startBtn.disabled = true;
-                    debugLog('Speech recognition not supported');
-                    return;
-                }
-                
-                debugLog('Initializing speech recognition...');
-                recognition = new SpeechRecognition();
-                recognition.continuous = false;
-                recognition.interimResults = false;
-                recognition.lang = 'en-US';
-                
-                recognition.onstart = function() {
-                    isListening = true;
-                    updateStatus('🎤 Listening... Speak now!', 'listening');
-                    startBtn.disabled = true;
-                    stopBtn.disabled = false;
-                    debugLog('Speech recognition started');
+                utterance.onstart = () => {
+                    this.updateStatus('🔊 Speaking...');
                 };
                 
-                recognition.onresult = function(event) {
-                    const transcript = event.results[0][0].transcript;
-                    const confidence = event.results[0][0].confidence;
-                    
-                    debugLog(`Speech recognized: "${transcript}" (confidence: ${Math.round(confidence * 100)}%)`);
-                    updateStatus(`💬 You said: "${transcript}"`, 'normal');
-                    
-                    // Send to bot
-                    if (sendMessageToBot(transcript)) {
-                        debugLog('Message sent to bot successfully');
-                    } else {
-                        updateStatus('❌ Error sending message to bot', 'error');
-                    }
+                utterance.onend = () => {
+                    this.updateStatus('Ready for next message');
                 };
                 
-                recognition.onerror = function(event) {
-                    debugLog(`Speech recognition error: ${event.error}`);
-                    let errorMessage = '❌ Speech error: ';
-                    switch(event.error) {
-                        case 'no-speech':
-                            errorMessage += 'No speech detected. Try again.';
-                            break;
-                        case 'network':
-                            errorMessage += 'Network error. Check connection.';
-                            break;
-                        case 'not-allowed':
-                            errorMessage += 'Microphone access denied.';
-                            break;
-                        case 'audio-capture':
-                            errorMessage += 'No microphone found.';
-                            break;
-                        default:
-                            errorMessage += event.error;
-                    }
-                    updateStatus(errorMessage, 'error');
-                    stopListening();
+                utterance.onerror = () => {
+                    this.updateStatus('Speech synthesis error');
                 };
                 
-                recognition.onend = function() {
-                    debugLog('Speech recognition ended');
-                    stopListening();
-                };
-                
-                updateStatus('✅ Speech recognition ready!', 'normal');
-                debugLog('Speech recognition initialized successfully');
+                this.synthesis.speak(utterance);
             }
-            
-            function startListening() {
-                if (!recognition) {
-                    updateStatus('❌ Speech recognition not available', 'error');
-                    return;
-                }
-                
-                if (isListening) {
-                    debugLog('Already listening, ignoring start request');
-                    return;
-                }
-                
-                // Stop any ongoing speech before listening
-                if (isSpeaking) {
-                    synth.cancel();
-                    isSpeaking = false;
-                }
-                
-                try {
-                    debugLog('Starting speech recognition...');
-                    recognition.start();
-                } catch (e) {
-                    debugLog(`Error starting recognition: ${e.message}`);
-                    updateStatus(`❌ Error: ${e.message}`, 'error');
-                }
-            }
-            
-            function stopListening() {
-                if (recognition && isListening) {
-                    try {
-                        recognition.stop();
-                        debugLog('Stopping speech recognition...');
-                    } catch (e) {
-                        debugLog(`Error stopping recognition: ${e.message}`);
-                    }
-                }
-                
-                isListening = false;
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-                updateStatus('✅ Ready to listen - click microphone', 'normal');
-            }
-            
-            function toggleMute() {
-                isVoiceEnabled = !isVoiceEnabled;
-                
-                if (isVoiceEnabled) {
-                    muteBtn.innerHTML = muteBtn.innerHTML.replace('🔇 Voice Off', '🔊 Voice On');
-                    muteBtn.className = 'btn btn-success';
-                    updateStatus('🔊 Voice output enabled', 'normal');
-                    debugLog('Voice enabled');
+
+            updateUI() {
+                if (this.isRecording) {
+                    this.voiceBtn.textContent = 'Stop Recording ⏹️';
+                    this.voiceBtn.classList.add('recording');
                 } else {
-                    muteBtn.innerHTML = muteBtn.innerHTML.replace('🔊 Voice On', '🔇 Voice Off');
-                    muteBtn.className = 'btn btn-danger';
-                    if (isSpeaking) {
-                        synth.cancel();
-                        isSpeaking = false;
-                    }
-                    updateStatus('🔇 Voice output disabled', 'normal');
-                    debugLog('Voice disabled');
+                    this.voiceBtn.innerHTML = 'Start Recording <span class="mic-icon">🎤</span>';
+                    this.voiceBtn.classList.remove('recording');
                 }
             }
-            
-            function testVoice() {
-                if (!synth) {
-                    updateStatus('❌ Text-to-speech not available', 'error');
-                    return;
-                }
-                
-                const testText = "Hello! This is a test of the voice output system. If you can hear this, the voice feature is working correctly.";
-                speak(testText);
-                debugLog('Testing voice with sample text');
-            }
-            
-            function updateVoiceSettings() {
-                debugLog('Voice settings updated');
-            }
-            
-            function speak(text) {
-                if (!synth || !isVoiceEnabled || !text || isSpeaking) {
-                    return;
-                }
-                
-                // Clean up text
-                const cleanText = text.replace(/<[^>]*>/g, '').replace(/\n+/g, ' ').trim();
-                if (!cleanText) return;
-                
-                debugLog(`Speaking: "${cleanText.substring(0, 50)}..."`);
-                
-                // Cancel any ongoing speech
-                synth.cancel();
-                isSpeaking = true;
-                
-                const utterance = new SpeechSynthesisUtterance(cleanText);
-                
-                // Apply settings
-                utterance.rate = parseFloat(speechRate.value);
-                utterance.pitch = parseFloat(speechPitch.value);
-                utterance.volume = parseFloat(speechVolume.value);
-                
-                // Select voice
-                const voices = synth.getVoices();
-                const selectedVoiceIndex = voiceSelect.value;
-                if (selectedVoiceIndex && voices[selectedVoiceIndex]) {
-                    utterance.voice = voices[selectedVoiceIndex];
-                    debugLog(`Using voice: ${voices[selectedVoiceIndex].name}`);
-                }
-                
-                utterance.onstart = function() {
-                    updateStatus('🔊 Speaking...', 'speaking');
-                    debugLog('Speech started');
-                };
-                
-                utterance.onend = function() {
-                    isSpeaking = false;
-                    updateStatus('✅ Ready - click microphone to speak', 'normal');
-                    debugLog('Speech ended');
-                };
-                
-                utterance.onerror = function(event) {
-                    isSpeaking = false;
-                    debugLog(`Speech error: ${event.error}`);
-                    updateStatus('❌ Speech error', 'error');
-                };
-                
-                try {
-                    synth.speak(utterance);
-                } catch (error) {
-                    isSpeaking = false;
-                    debugLog(`Error speaking: ${error.message}`);
-                    updateStatus('❌ Error with text-to-speech', 'error');
+
+            updateStatus(message) {
+                this.status.textContent = message;
+                // Clear status after 5 seconds if it's not an ongoing state
+                if (!message.includes('Listening') && !message.includes('Speaking')) {
+                    setTimeout(() => {
+                        if (this.status.textContent === message) {
+                            this.status.textContent = 'Ready for voice input';
+                        }
+                    }, 5000);
                 }
             }
-            
-            // Keyboard shortcuts
-            document.addEventListener('keydown', function(event) {
-                if (event.ctrlKey && event.code === 'Space') {
-                    event.preventDefault();
-                    if (isListening) {
-                        stopListening();
-                    } else {
-                        startListening();
-                    }
-                } else if (event.ctrlKey && event.key === 'm') {
-                    event.preventDefault();
-                    toggleMute();
-                }
-            });
-            
-            // Handle browser visibility changes
-            document.addEventListener('visibilitychange', function() {
-                if (document.hidden && isListening) {
-                    stopListening();
-                    debugLog('Page hidden, stopped listening');
-                }
-            });
-            
-            debugLog('Initialization complete');
+
+            showError(message) {
+                this.status.innerHTML = `<span class="error-message">❌ ${message}</span>`;
+            }
+        }
+
+        // Initialize the voice chat bot when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new VoiceChatBot();
+        });
+
+        // Handle iframe load
+        document.getElementById('botpressIframe').addEventListener('load', () => {
+            console.log('Botpress iframe loaded successfully');
         });
     </script>
 </body>
