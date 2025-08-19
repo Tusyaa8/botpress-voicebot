@@ -19,14 +19,16 @@
       botId: "60be0087-a72c-4cbc-a8d4-40d7bc89b74a",
       clientId: "bc050014-0950-4e07-b5f7-ec5ae7c05ff0",
       selector: "#webchat",
-      enableVoice: true   // 👈 adds mic input
+      enableVoice: true   // 👈 mic input
     });
 
-    // Speak all bot replies
-    window.botpress.on("webchat:message", (event) => {
-      if (event.message && event.message.type === "text" && event.message.from === "bot") {
-        const utterance = new SpeechSynthesisUtterance(event.message.text);
-        utterance.lang = "en-US";  // change to "en-IN" for Indian English
+    // ✅ Speak all bot replies
+    window.botpress.on("message", (event) => {
+      if (event.payload?.type === "text" && event.payload?.from === "bot") {
+        const utterance = new SpeechSynthesisUtterance(event.payload.text);
+        utterance.lang = "en-US";   // change to "en-IN" if you want Indian English accent
+        utterance.rate = 1;         // speaking speed
+        utterance.pitch = 1;        // voice pitch
         speechSynthesis.speak(utterance);
       }
     });
