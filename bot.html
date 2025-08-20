@@ -1,34 +1,39 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Botpress Webchat</title>
-  <script src="https://cdn.botpress.cloud/webchat/v1/inject.js"></script>
-</head>
-<body>
-  <h2>Botpress Webchat Integration</h2>
 
-  <script>
-    window.botpressWebChat.init({
-      botId: "60be0087-a72c-4cbc-a8d4-40d7bc89b74a",
-      clientId: "bc050014-0950-4e07-b5f7-ec5ae7c05ff0",
-      messagingUrl: "https://messaging.botpress.cloud",
-      showPoweredBy: false,
-      enableConversationDeletion: true,
-    });
+<!-- In your <head> tag -->
+<script src="https://cdn.botpress.cloud/webchat/v3.2/inject.js"></script>
+<style>
+  #webchat .bpWebchat {
+    position: unset;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    max-width: 100%;
+  }
 
-    // Auto open
-    window.botpressWebChat.onEvent(() => {
-      console.log("✅ Botpress chat ready");
-      window.botpressWebChat.sendEvent({ type: "show" });
-    }, ["LIFECYCLE.READY"]);
+  #webchat .bpFab {
+    display: none;
+  }
+</style>
 
-    // Debug events
-    window.addEventListener("message", function(event) {
-      if (event.data?.type) {
-        console.log("📩 Event:", event.data);
-      }
-    });
-  </script>
-</body>
-</html>
+<!-- Put this on your page BEFORE the script below -->
+<div id="webchat" style="width: 500px; height: 500px;"></div>
+
+<!-- In your <body> tag -->
+<script>
+  window.botpress.on("webchat:ready", () => {
+    window.botpress.open();
+  });
+  window.botpress.init({
+  "botId": "60be0087-a72c-4cbc-a8d4-40d7bc89b74a",
+  "configuration": {
+    "website": {},
+    "email": {},
+    "phone": {},
+    "termsOfService": {},
+    "privacyPolicy": {},
+    "showPoweredBy": false
+  },
+  "clientId": "bc050014-0950-4e07-b5f7-ec5ae7c05ff0",
+  "selector": "#webchat"
+});
+</script>
